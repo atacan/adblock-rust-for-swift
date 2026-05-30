@@ -12,7 +12,7 @@ let package = Package(
     .executableTarget(
       name: "AdblockWebViewApp",
       dependencies: [
-        .product(name: "AdblockRust", package: "adblock-rust-ios")
+        .product(name: "AdblockRust", package: "adblock-rust-for-swift")
       ]
     )
   ]

@@ -1,4 +1,4 @@
-# AdblockRustIOS
+# AdblockRust
 
 This is a small standalone Apple-platform wrapper for Brave's
 [adblock-rust](https://github.com/brave/adblock-rust) engine. It builds a
@@ -49,30 +49,38 @@ The script builds these Rust targets:
 
 ## Swift Package Use
 
-For local development, build the XCFramework first:
-
-```sh
-./Scripts/build-xcframework.sh
-```
-
-Then add this package to your app:
+For app consumers, add the GitHub package URL in Xcode or in `Package.swift`:
 
 ```swift
-.package(path: "path/to/adblock-rust-ios")
+.package(url: "https://github.com/atacan/adblock-rust-for-swift.git", from: "0.0.1")
 ```
 
 Then add the product to your target:
 
 ```swift
-.product(name: "AdblockRust", package: "adblock-rust-ios")
+.product(name: "AdblockRust", package: "adblock-rust-for-swift")
 ```
 
-For a remote Git dependency, add the repository URL in Xcode or in
-`Package.swift`, then add the `AdblockRust` product to your app target. If your
-repository or local folder has a different name, use that package identity in
-the `package:` field.
+For local Rust/XCFramework development, build the XCFramework first:
 
-For public releases, use the GitHub Releases flow below so consumers do not need
+```sh
+./Scripts/build-xcframework.sh
+```
+
+Then point SwiftPM at the local binary while building this package:
+
+```sh
+ADBLOCK_RUST_XCFRAMEWORK_PATH=Artifacts/CAdblockRust.xcframework swift build
+```
+
+Or use the same environment variable while running the example app:
+
+```sh
+cd Examples/AdblockWebViewApp
+ADBLOCK_RUST_XCFRAMEWORK_PATH=Artifacts/CAdblockRust.xcframework ./scripts/run.sh
+```
+
+The default manifest uses the GitHub Release binary so consumers do not need
 Rust installed.
 
 ## Filter Lists
@@ -193,9 +201,9 @@ adblock = { git = "https://github.com/yourname/adblock-rust", rev = "...", ... }
 After rebuilding the XCFramework, verify all supported platforms:
 
 ```sh
-xcodebuild -scheme AdblockRustIOS -destination 'generic/platform=iOS' build
-xcodebuild -scheme AdblockRustIOS -destination 'generic/platform=iOS Simulator' build
-xcodebuild -scheme AdblockRustIOS -destination 'generic/platform=macOS' build
+xcodebuild -scheme AdblockRust -destination 'generic/platform=iOS' build
+xcodebuild -scheme AdblockRust -destination 'generic/platform=iOS Simulator' build
+xcodebuild -scheme AdblockRust -destination 'generic/platform=macOS' build
 ```
 
 ## Repository Layout
@@ -204,7 +212,6 @@ Commit these files in an independent repository:
 
 ```text
 Package.swift
-Package.release.swift
 README.md
 rust-toolchain.toml
 Scripts/
@@ -223,19 +230,19 @@ For distribution, publish the XCFramework as a GitHub Release asset:
 
 ```sh
 ./Scripts/build-xcframework.sh
-./Scripts/package-release.sh
+./Scripts/package-release.sh 0.0.1 atacan/adblock-rust-for-swift
 ```
 
 Upload `Release/CAdblockRust.xcframework.zip` to a GitHub Release, usually under
-a tag such as `0.1.0`.
+a tag such as `0.0.1`.
 
-Then copy `Package.release.swift` to `Package.swift` and replace the URL and
-checksum:
+Then update the binary target in `Package.swift` with the release URL and
+checksum printed by the script:
 
 ```swift
 .binaryTarget(
   name: "CAdblockRust",
-  url: "https://github.com/OWNER/REPO/releases/download/0.1.0/CAdblockRust.xcframework.zip",
+  url: "https://github.com/atacan/adblock-rust-for-swift/releases/download/0.0.1/CAdblockRust.xcframework.zip",
   checksum: "..."
 )
 ```

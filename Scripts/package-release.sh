@@ -6,6 +6,9 @@ ARTIFACTS_DIR="$ROOT_DIR/Artifacts"
 RELEASE_DIR="$ROOT_DIR/Release"
 XCFRAMEWORK="$ARTIFACTS_DIR/CAdblockRust.xcframework"
 ZIP_PATH="$RELEASE_DIR/CAdblockRust.xcframework.zip"
+VERSION="${1:-0.0.1}"
+REPOSITORY="${2:-atacan/adblock-rust-for-swift}"
+ASSET_URL="https://github.com/$REPOSITORY/releases/download/$VERSION/CAdblockRust.xcframework.zip"
 
 if [[ ! -d "$XCFRAMEWORK" ]]; then
   echo "Missing $XCFRAMEWORK"
@@ -31,7 +34,7 @@ Use this binary target in Package.swift after uploading the zip to GitHub Releas
 
 .binaryTarget(
   name: "CAdblockRust",
-  url: "https://github.com/OWNER/REPO/releases/download/VERSION/CAdblockRust.xcframework.zip",
+  url: "$ASSET_URL",
   checksum: "$CHECKSUM"
 )
 EOF
