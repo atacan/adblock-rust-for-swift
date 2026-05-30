@@ -1,0 +1,9 @@
+.build/
+Native/adblock-rust-ffi/target/
+.swiftpm/
+DerivedData/
+Artifacts/
+Release/
+Examples/*/.build/
+Examples/*.app/
+Examples/*/*.app/

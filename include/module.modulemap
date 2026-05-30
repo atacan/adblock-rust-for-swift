@@ -1,0 +1,4 @@
+module CAdblockRust {
+  header "AdblockRustFFI.h"
+  export *
+}
