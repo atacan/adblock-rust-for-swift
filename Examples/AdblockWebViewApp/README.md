@@ -1,7 +1,8 @@
 # AdblockWebViewApp
 
-This is a minimal macOS AppKit example that uses `AdblockRust` with a
-`WKWebView`.
+This is a minimal macOS AppKit example that uses `AdblockRust` with
+side-by-side `WKWebView` instances. The left pane applies ad-blocking rules,
+and the right pane loads the same URL without those rules for comparison.
 
 On launch it downloads:
 
@@ -10,7 +11,7 @@ On launch it downloads:
 
 It joins both lists, converts them to WebKit content-blocker JSON with
 `AdblockEngine.contentBlockingRules(fromFilterSet:)`, compiles a
-`WKContentRuleList`, and attaches it to the web view.
+`WKContentRuleList`, and attaches it to the left web view.
 
 ## Run Without Xcode
 
@@ -26,7 +27,7 @@ The scripts use SwiftPM, create a small `.app` bundle, and launch it with
 ## Build Only
 
 ```sh
-swift build
+ADBLOCK_RUST_XCFRAMEWORK_PATH=Artifacts/CAdblockRust.xcframework swift build
 ```
 
 The parent package must have `Artifacts/CAdblockRust.xcframework` available.

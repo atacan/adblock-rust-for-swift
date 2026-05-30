@@ -14,7 +14,8 @@ private enum FilterListSource: String, CaseIterable {
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   private var window: NSWindow!
-  private var webView: WKWebView!
+  private var blockedWebView: WKWebView!
+  private var plainWebView: WKWebView!
   private let addressField = NSTextField(string: "https://example.com")
   private let statusLabel = NSTextField(labelWithString: "Preparing ad blocker...")
 
@@ -34,11 +35,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   }
 
   private func buildWindow() {
-    let configuration = WKWebViewConfiguration()
-    configuration.websiteDataStore = .default()
+    let blockedConfiguration = WKWebViewConfiguration()
+    blockedConfiguration.websiteDataStore = .default()
 
-    webView = WKWebView(frame: .zero, configuration: configuration)
-    webView.navigationDelegate = self
+    let plainConfiguration = WKWebViewConfiguration()
+    plainConfiguration.websiteDataStore = .default()
+
+    blockedWebView = WKWebView(frame: .zero, configuration: blockedConfiguration)
+    blockedWebView.navigationDelegate = self
+
+    plainWebView = WKWebView(frame: .zero, configuration: plainConfiguration)
+    plainWebView.navigationDelegate = self
 
     let toolbar = NSStackView()
     toolbar.orientation = .horizontal
@@ -63,12 +70,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
 
     statusLabel.lineBreakMode = .byTruncatingTail
     statusLabel.translatesAutoresizingMaskIntoConstraints = false
-    webView.translatesAutoresizingMaskIntoConstraints = false
+
+    let comparisonView = NSStackView()
+    comparisonView.orientation = .horizontal
+    comparisonView.alignment = .height
+    comparisonView.distribution = .fillEqually
+    comparisonView.spacing = 1
+    comparisonView.translatesAutoresizingMaskIntoConstraints = false
+
+    let blockedPane = makeWebViewPane(title: "With ad blocking", webView: blockedWebView)
+    let plainPane = makeWebViewPane(title: "Without ad blocking", webView: plainWebView)
+    comparisonView.addArrangedSubview(blockedPane)
+    comparisonView.addArrangedSubview(plainPane)
 
     let contentView = NSView()
     contentView.addSubview(toolbar)
     contentView.addSubview(statusLabel)
-    contentView.addSubview(webView)
+    contentView.addSubview(comparisonView)
 
     NSLayoutConstraint.activate([
       toolbar.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
@@ -79,10 +97,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
       statusLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
       statusLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
 
-      webView.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 8),
-      webView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-      webView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-      webView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+      comparisonView.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 8),
+      comparisonView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+      comparisonView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+      comparisonView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
     ])
 
     window = NSWindow(
@@ -95,6 +113,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     window.contentView = contentView
     window.center()
     window.makeKeyAndOrderFront(nil)
+  }
+
+  private func makeWebViewPane(title: String, webView: WKWebView) -> NSView {
+    let titleLabel = NSTextField(labelWithString: title)
+    titleLabel.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
+    titleLabel.lineBreakMode = .byTruncatingTail
+
+    webView.translatesAutoresizingMaskIntoConstraints = false
+
+    let pane = NSStackView()
+    pane.orientation = .vertical
+    pane.alignment = .leading
+    pane.spacing = 6
+    pane.addArrangedSubview(titleLabel)
+    pane.addArrangedSubview(webView)
+
+    titleLabel.leadingAnchor.constraint(equalTo: pane.leadingAnchor, constant: 10).isActive = true
+    webView.widthAnchor.constraint(equalTo: pane.widthAnchor).isActive = true
+    webView.heightAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+
+    return pane
   }
 
   @objc private func loadCurrentAddress() {
@@ -114,11 +153,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     }
 
     addressField.stringValue = url.absoluteString
-    webView.load(URLRequest(url: url))
+    let request = URLRequest(url: url)
+    blockedWebView.load(request)
+    plainWebView.load(request)
   }
 
   @objc private func reloadPage() {
-    webView.reload()
+    blockedWebView.reload()
+    plainWebView.reload()
   }
 
   @MainActor private func installContentBlocker() async {
@@ -126,10 +168,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
       let rules = try await downloadRules()
       let converted = try AdblockEngine.contentBlockingRules(fromFilterSet: rules)
       let ruleList = try await compileRuleList(json: converted.json)
-      webView.configuration.userContentController.add(ruleList)
+      blockedWebView.configuration.userContentController.add(ruleList)
 
       let suffix = converted.truncated ? " Rules were truncated to WebKit's limit." : ""
-      statusLabel.stringValue = "Ad blocker ready: EasyList + EasyPrivacy.\(suffix)"
+      statusLabel.stringValue = "Ad blocker ready on the left pane: EasyList + EasyPrivacy.\(suffix)"
     } catch {
       statusLabel.stringValue = "Ad blocker unavailable: \(error.localizedDescription)"
     }
@@ -170,11 +212,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   }
 
   func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-    statusLabel.stringValue = "Loading \(webView.url?.absoluteString ?? addressField.stringValue)"
+    let paneName = webView === blockedWebView ? "left" : "right"
+    statusLabel.stringValue = "Loading \(paneName) pane: \(webView.url?.absoluteString ?? addressField.stringValue)"
   }
 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-    statusLabel.stringValue = "Loaded \(webView.url?.absoluteString ?? addressField.stringValue)"
+    let paneName = webView === blockedWebView ? "left" : "right"
+    statusLabel.stringValue = "Loaded \(paneName) pane: \(webView.url?.absoluteString ?? addressField.stringValue)"
   }
 
   func webView(

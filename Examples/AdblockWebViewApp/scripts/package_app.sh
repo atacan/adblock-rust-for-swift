@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="$(cd "${ROOT_DIR}/../.." && pwd)"
 APP_NAME="AdblockWebViewApp"
 BUNDLE_ID="dev.adblockrust.example.webview"
 BUILD_MODE="${1:-debug}"
@@ -16,6 +17,9 @@ cd "${ROOT_DIR}"
 export CLANG_MODULE_CACHE_PATH="${TMPDIR:-/tmp}/swiftpm-module-cache"
 export XDG_CACHE_HOME="${TMPDIR:-/tmp}/swiftpm-cache"
 export SWIFTPM_DISABLE_SANDBOX=1
+if [[ -z "${ADBLOCK_RUST_XCFRAMEWORK_PATH:-}" && -d "${REPO_DIR}/Artifacts/CAdblockRust.xcframework" ]]; then
+  export ADBLOCK_RUST_XCFRAMEWORK_PATH="Artifacts/CAdblockRust.xcframework"
+fi
 
 swift build -c "${BUILD_MODE}"
 
