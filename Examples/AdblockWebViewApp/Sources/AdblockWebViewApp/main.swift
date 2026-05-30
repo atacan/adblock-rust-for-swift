@@ -230,7 +230,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   }
 }
 
+private func buildMainMenu() -> NSMenu {
+  let mainMenu = NSMenu()
+  let appMenuItem = NSMenuItem()
+  let appMenu = NSMenu()
+  let editMenuItem = NSMenuItem()
+  let editMenu = NSMenu(title: "Edit")
+  let quitItem = NSMenuItem(
+    title: "Quit Adblock WebView Example",
+    action: #selector(NSApplication.terminate(_:)),
+    keyEquivalent: "q"
+  )
+
+  quitItem.target = NSApp
+  appMenu.addItem(quitItem)
+  appMenuItem.submenu = appMenu
+  mainMenu.addItem(appMenuItem)
+
+  editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+  editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+  editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+  editMenu.addItem(NSMenuItem.separator())
+  editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+  editMenuItem.submenu = editMenu
+  mainMenu.addItem(editMenuItem)
+
+  return mainMenu
+}
+
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
+app.mainMenu = buildMainMenu()
 app.run()
